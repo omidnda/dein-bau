@@ -15,7 +15,7 @@ export type SiteContent = {
 export const defaultContent: SiteContent = {
   company: { name: "Dein Bau Hub e.K.", owner: "Seyedeh Razieh Ahmadi", phone: "Telefon nach Bestätigung", email: "E-Mail nach Bestätigung", address: "Hamburg und Umgebung", tagline: "Innenausbau · Bausanierung · Modernisierung" },
   nav: [{ label: "Startseite", href: "/" }, { label: "Leistungen", href: "/leistungen" }, { label: "Über uns", href: "/ueber-uns" }, { label: "Referenzen", href: "/gallery" }, { label: "Kontakt", href: "/kontakt" }],
-  hero: { eyebrow: "Innenausbau · Bausanierung · Modernisierung", title: "Räume, die bleiben.", text: "Dein Bau Hub begleitet Sanierungs- und Ausbauprojekte in Hamburg – klar geplant, sauber koordiniert und fachgerecht umgesetzt.", image: "/images/generated/hero-renovation.png" },
+  hero: { eyebrow: "Innenausbau · Bausanierung · Modernisierung", title: "Ihr Projekt. Unser Handwerk. Ein Ansprechpartner.", text: "Innenausbau, Bausanierung und Modernisierung in Hamburg – klar geplant, sauber koordiniert und fachgerecht umgesetzt.", image: "/images/generated/hero-renovation.png" },
   services: [
     { slug: "innenausbau", title: "Innenausbau & Trockenbau", summary: "Räume neu denken und präzise ausbauen.", details: "Trennwände, Decken, Installationsverkleidungen, Vorsatzschalen und Oberflächenvorbereitung.", image: "/images/generated/interior-renovation.png" },
     { slug: "bad", title: "Badsanierung", summary: "Funktionale Bäder mit sauberer Koordination.", details: "Rückbau, Vorbereitung, Abdichtung im zulässigen Umfang und Koordination qualifizierter Fachbetriebe.", image: "/images/generated/bathroom-renovation.png" },
