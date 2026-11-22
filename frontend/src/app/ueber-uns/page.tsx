@@ -1,0 +1,7 @@
+import Link from "next/link";
+import SiteFooter from "@/components/SiteFooter";
+import SiteHeader from "@/components/SiteHeader";
+import { getSiteContent } from "@/content/site";
+
+export const metadata = { title: "Über uns", description: "Dein Bau Hub e.K. für Innenausbau, Bausanierung und Modernisierung in Hamburg." };
+export default async function AboutPage() { const content = await getSiteContent(); return <><SiteHeader /><main><section className="page-intro"><div className="container"><p className="eyebrow">Über Dein Bau Hub</p><h1>Handwerk mit<br />Verantwortung.</h1><p>{content.about.intro}</p></div></section><section className="section intro-section"><div className="container split"><div><p className="eyebrow">Unser Anspruch</p><h2>Verständlich beraten. Sauber umsetzen.</h2></div><div><p className="large-copy">Sanierungsarbeiten bringen viele Entscheidungen mit sich. Deshalb setzen wir auf nachvollziehbare Angebote, klare Absprachen und eine strukturierte Koordination.</p><Link className="text-link" href="/kontakt">Gespräch anfragen <span>↗</span></Link></div></div></section><section className="section services-section"><div className="container"><div className="section-heading"><div><p className="eyebrow">Unsere Werte</p><h2>Was uns<br />wichtig ist.</h2></div></div><div className="value-grid">{content.about.points.map((point, index) => <article className="value-card" key={point.title}><span className="service-number">0{index + 1}</span><h3>{point.title}</h3><p>{point.text}</p></article>)}</div></div></section></main><SiteFooter /></>; }

@@ -1,0 +1,5 @@
+"use client";
+import Image from "next/image";
+import { useState } from "react";
+
+export default function BeforeAfterSlider() { const [position, setPosition] = useState(52); return <div className="before-after"><div className="after-image"><Image src="/images/generated/bathroom-renovation.png" alt="Visualisierung eines renovierten Badezimmers" fill sizes="(max-width: 900px) 100vw, 900px" /></div><div className="before-image" style={{ width: `${position}%` }}><Image src="/images/generated/material-planning.png" alt="Visualisierung der Projektplanung" fill sizes="(max-width: 900px) 100vw, 900px" /></div><div className="slider-line" style={{ left: `${position}%` }} /><label className="slider-control">Vergleichsansicht (Visualisierung)<input type="range" min="8" max="92" value={position} onChange={(event) => setPosition(Number(event.target.value))} aria-label="Vergleichsansicht verschieben" /></label><span className="compare-label before">Planung</span><span className="compare-label after">Ausführung</span></div>; }

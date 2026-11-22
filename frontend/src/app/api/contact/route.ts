@@ -1,0 +1,3 @@
+import { NextRequest, NextResponse } from "next/server";
+import { fetchBackend } from "@/lib/backend-api";
+export async function POST(request: NextRequest) { try { const response = await fetchBackend("/contact/", { method: "POST", headers: { "Content-Type": "application/json", ...(request.headers.get("x-real-ip") ? { "X-Real-IP": request.headers.get("x-real-ip")! } : {}) }, body: JSON.stringify(await request.json()), cache: "no-store" }); const body = await response.json().catch(() => ({ detail: "Ungültige Antwort." })); return NextResponse.json(body, { status: response.status }); } catch { return NextResponse.json({ detail: "Ihre Nachricht konnte nicht gesendet werden." }, { status: 502 }); } }
