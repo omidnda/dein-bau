@@ -144,3 +144,46 @@ html { scroll-behavior:auto; } body { background:#fff; } .container { width:min(
   .scroll-reveal-pending { opacity:0; translate:0 22px; transition:opacity .9s ease, translate .9s cubic-bezier(.22,1,.36,1); }
   .scroll-reveal-pending.scroll-reveal-visible, .scroll-reveal-pending:focus-within { opacity:1; translate:0 0; }
 }
+
+/* Balanced spacing and consistent service cards. */
+.section { padding-block:clamp(72px, 7vw, 108px); }
+.section-heading { gap:clamp(28px, 5vw, 72px); margin-bottom:clamp(32px, 4vw, 48px); }
+.company-feature-grid { grid-template-columns:minmax(0, 1fr) minmax(0, .9fr); gap:clamp(36px, 6vw, 80px); }
+.company-feature-image { height:auto; aspect-ratio:6 / 5; }
+.company-feature-grid > div:last-child { max-width:560px; }
+.editorial-services-grid { align-items:stretch; gap:24px; }
+.editorial-service, .editorial-service:last-child { display:flex; flex-direction:column; height:100%; }
+.editorial-service:last-child { grid-column:2; }
+.editorial-service-image, .editorial-service-graphic { height:auto; aspect-ratio: 5 / 3; flex:none; }
+.editorial-service-body { min-height:205px; padding:24px 26px 28px; }
+.editorial-service-body h3 { margin:14px 0 10px; }
+.trust-section { padding-block:clamp(64px, 6vw, 90px); }
+.trust-heading { max-width:760px; margin-bottom:clamp(28px, 3vw, 40px); }
+.trust-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.trust-grid article { margin:0; padding:28px clamp(18px, 2.4vw, 34px) 6px; }
+.trust-grid article:first-child { padding-left:0; }
+.trust-icon { margin-bottom:22px; }
+.trust-grid p { max-width:34ch; }
+@media (max-width:900px) {
+  .company-feature-grid { grid-template-columns:1fr; gap:32px; }
+  .company-feature-image { aspect-ratio: 16 / 10; height:auto; }
+  .editorial-service:last-child { grid-column:span 2; width:calc(50% - 12px); justify-self:center; }
+  .trust-grid { grid-template-columns:1fr; }
+  .trust-grid article, .trust-grid article:first-child { padding:22px 0; }
+  .trust-icon { margin:0; }
+  .trust-grid p { max-width:55ch; }
+}
+@media (max-width:540px) {
+  .section { padding-block:64px; }
+  .editorial-services-grid { gap:16px; }
+  .editorial-service:last-child { grid-column:auto; width:100%; }
+  .editorial-service-image, .editorial-service-graphic { aspect-ratio: 16 / 10; }
+  .editorial-service-body { min-height:180px; padding:22px; }
+  .company-feature-image { aspect-ratio: 5 / 4; }
+  .trust-section { padding-block:56px; }
+  .trust-heading h2 { font-size:clamp(31px, 8vw, 40px); line-height:1.12; }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .scroll-reveal-pending { opacity:.15; translate:0 18px; transition:opacity .85s ease, translate .85s cubic-bezier(.22,1,.36,1), transform .55s ease, box-shadow .55s ease; }
+  .scroll-reveal-pending.scroll-reveal-visible, .scroll-reveal-pending:focus-within { opacity:1; translate:0 0; }
+}
