@@ -1,11 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
+import { getSiteContent, type SiteContent } from "@/content/site";
 
-export default function SiteHeader({
+export default async function SiteHeader({
   phone = "Kontakt aufnehmen",
+  siteContent,
 }: {
   phone?: string;
+  siteContent?: SiteContent;
 }) {
+  const content = siteContent ?? await getSiteContent();
   return (
     <header className="site-header">
       <Link className="brand" href="/">
@@ -21,13 +25,7 @@ export default function SiteHeader({
         </span> */}
       </Link>
       <nav aria-label="Hauptnavigation">
-        <Link className="nav-home" href="/">
-          Startseite
-        </Link>
-        <Link href="/leistungen">Leistungen</Link>
-        <Link href="/ueber-uns">Über uns</Link>
-        <Link href="/gallery">Referenzen</Link>
-        <Link href="/kontakt">Kontakt</Link>
+        {content.nav.map((item) => <Link key={item.href} href={item.href}>{item.label}</Link>)}
       </nav>
       <a className="header-phone" href="/kontakt">
         <span>↗</span>
@@ -40,11 +38,7 @@ export default function SiteHeader({
           <span />
         </summary>
         <nav aria-label="Mobile Navigation">
-          <Link href="/">Startseite</Link>
-          <Link href="/leistungen">Leistungen</Link>
-          <Link href="/ueber-uns">Über uns</Link>
-          <Link href="/gallery">Referenzen</Link>
-          <Link href="/kontakt">Kontakt</Link>
+          {content.nav.map((item) => <Link key={item.href} href={item.href}>{item.label}</Link>)}
         </nav>
       </details>
     </header>

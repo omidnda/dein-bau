@@ -89,11 +89,11 @@ def get_client_ip(request):
         return "unknown"
 
 
-def contact_rate_limited(request):
+def contact_rate_limited(request, prefix="contact-rate"):
     limit = settings.CONTACT_RATE_LIMIT
     window = settings.CONTACT_RATE_LIMIT_WINDOW
     identity = hashlib.sha256(get_client_ip(request).encode()).hexdigest()
-    key = f"contact-rate:{identity}"
+    key = f"{prefix}:{identity}"
     if cache.add(key, 1, timeout=window):
         return False
     try:
@@ -224,6 +224,12 @@ def media_list(request):
     if not valid_uploaded_media(uploaded):
         return JsonResponse({"detail": "Only valid JPG, PNG, WebP, MP4, WebM, and MOV files are allowed."}, status=400)
 
+    try:
+        sort_order = int(request.POST.get("sortOrder", "0") or 0)
+        if sort_order < 0:
+            raise ValueError
+    except ValueError:
+        return JsonResponse({"detail": "sortOrder must be a nonnegative integer."}, status=400)
     asset = MediaAsset(file=uploaded, original_name=uploaded.name,
                        content_type=uploaded.content_type,
                        media_type="video" if uploaded.content_type.startswith("video/") else "image",
@@ -231,7 +237,7 @@ def media_list(request):
                        alt_text=str(request.POST.get("alt", ""))[:255],
                        category=str(request.POST.get("category", ""))[:80],
                        is_featured=request.POST.get("isFeatured") == "true",
-                       sort_order=int(request.POST.get("sortOrder", "0") or 0))
+                       sort_order=sort_order)
     try:
         asset.full_clean()
         asset.save()
@@ -246,16 +252,35 @@ def public_media_list(request):
 
 
 @csrf_exempt
-@require_http_methods(["DELETE"])
+@require_http_methods(["PATCH", "DELETE"])
 @require_admin_token
 def media_detail(request, pk):
     try:
         asset = MediaAsset.objects.get(pk=pk)
     except MediaAsset.DoesNotExist as exc:
         raise Http404 from exc
-    asset.file.delete(save=False)
-    asset.delete()
-    return HttpResponse(status=204)
+    if request.method == "DELETE":
+        asset.file.delete(save=False)
+        asset.delete()
+        return HttpResponse(status=204)
+    try:
+        payload = parse_json(request)
+        fields = {"title": "title", "alt": "alt_text", "category": "category", "isFeatured": "is_featured", "sortOrder": "sort_order"}
+        for key, field in fields.items():
+            if key in payload:
+                value = payload[key]
+                if key in ("title", "alt", "category") and not isinstance(value, str):
+                    raise ValidationError({key: "Must be a string."})
+                if key == "isFeatured" and not isinstance(value, bool):
+                    raise ValidationError({key: "Must be a boolean."})
+                if key == "sortOrder" and (not isinstance(value, int) or isinstance(value, bool) or value < 0):
+                    raise ValidationError({key: "Must be a nonnegative integer."})
+                setattr(asset, field, value)
+        asset.full_clean()
+        asset.save()
+    except ValidationError as exc:
+        return JsonResponse({"detail": exc.message_dict if hasattr(exc, "message_dict") else exc.messages}, status=400)
+    return JsonResponse(serialize_media(asset))
 
 
 @require_http_methods(["GET"])

@@ -1,0 +1,10 @@
+from django.contrib import admin
+from .models import Review
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ("name", "rating", "status", "created_at")
+    list_filter = ("status", "rating")
+    search_fields = ("name", "message")
+    readonly_fields = ("created_at",)

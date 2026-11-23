@@ -31,6 +31,16 @@ DEBUG = os.environ.get("DEBUG", "true").lower() == "true"
 ALLOWED_HOSTS = [host.strip() for host in os.environ.get(
     "ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if host.strip()]
 ADMIN_API_TOKEN = os.environ.get("ADMIN_API_TOKEN", "")
+# Local development only: Next.js reads its .env.local automatically, whereas
+# Django does not load .env. Production continues to use process environment.
+if DEBUG and not ADMIN_API_TOKEN:
+    local_env = BASE_DIR / ".env"
+    if local_env.is_file():
+        for line in local_env.read_text(encoding="utf-8").splitlines():
+            key, separator, value = line.partition("=")
+            if separator and key.strip() == "ADMIN_API_TOKEN":
+                ADMIN_API_TOKEN = value.strip().strip('"\'')
+                break
 CORS_ALLOWED_ORIGINS = {
     origin.strip().rstrip("/")
     for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
@@ -53,6 +63,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'apps.main',
+    'apps.reviews',
 ]
 
 MIDDLEWARE = [

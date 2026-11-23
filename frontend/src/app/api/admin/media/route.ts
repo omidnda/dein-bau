@@ -1,6 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchBackend } from "@/lib/backend-api";
 import { isAdminRequest } from "@/lib/admin-api";
-function publicUrl(url: string) { return `/api/media/${url.replace(/^\/media\//, "")}`; }
-export async function GET() { if (!(await isAdminRequest())) return NextResponse.json({ detail: "Unauthorized" }, { status: 401 }); const response = await fetchBackend("/media/", { headers: { "X-Admin-Token": process.env.ADMIN_API_TOKEN ?? "" }, cache: "no-store" }); const payload = await response.json(); return NextResponse.json({ ...payload, results: (payload.results ?? []).map((item: { url: string }) => ({ ...item, url: publicUrl(item.url) })) }, { status: response.status }); }
-export async function POST(request: NextRequest) { if (!(await isAdminRequest())) return NextResponse.json({ detail: "Unauthorized" }, { status: 401 }); const response = await fetchBackend("/media/", { method: "POST", headers: { "X-Admin-Token": process.env.ADMIN_API_TOKEN ?? "" }, body: await request.formData(), cache: "no-store" }); const payload = await response.json(); return NextResponse.json(payload, { status: response.status }); }
+import { hasValidRequestOrigin } from "@/lib/admin-auth";
+
+const headers = () => ({ "X-Admin-Token": process.env.ADMIN_API_TOKEN ?? "" });
+function publicUrl(url: string) { return url.startsWith("/media/") ? `/api/media/${url.slice(7)}` : url; }
+export async function GET() {
+  if (!(await isAdminRequest())) return NextResponse.json({ detail: "Unauthorized" }, { status: 401 });
+  try {
+    const response = await fetchBackend("/media/", { headers: headers(), cache: "no-store" });
+    const payload = await response.json();
+    return NextResponse.json({ ...payload, results: (payload.results ?? []).map((item: { url: string }) => ({ ...item, url: publicUrl(item.url) })) }, { status: response.status });
+  } catch { return NextResponse.json({ detail: "Backend nicht erreichbar." }, { status: 502 }); }
+}
+export async function POST(request: NextRequest) {
+  if (!(await isAdminRequest())) return NextResponse.json({ detail: "Unauthorized" }, { status: 401 });
+  if (!hasValidRequestOrigin(request)) return NextResponse.json({ detail: "Invalid request origin." }, { status: 403 });
+  try {
+    const response = await fetchBackend("/media/", { method: "POST", headers: headers(), body: await request.formData(), cache: "no-store" });
+    return NextResponse.json(await response.json(), { status: response.status });
+  } catch { return NextResponse.json({ detail: "Backend nicht erreichbar." }, { status: 502 }); }
+}
+async function mutate(request: NextRequest, method: "PATCH" | "DELETE") {
+  if (!(await isAdminRequest())) return NextResponse.json({ detail: "Unauthorized" }, { status: 401 });
+  if (!hasValidRequestOrigin(request)) return NextResponse.json({ detail: "Invalid request origin." }, { status: 403 });
+  const id = request.nextUrl.searchParams.get("id");
+  if (!id || !/^\d+$/.test(id)) return NextResponse.json({ detail: "Invalid id" }, { status: 400 });
+  try {
+    const response = await fetchBackend(`/media/${id}/`, { method, headers: { ...headers(), ...(method === "PATCH" ? { "Content-Type": "application/json" } : {}) }, ...(method === "PATCH" ? { body: JSON.stringify(await request.json()) } : {}), cache: "no-store" });
+    return response.status === 204 ? new NextResponse(null, { status: 204 }) : NextResponse.json(await response.json(), { status: response.status });
+  } catch { return NextResponse.json({ detail: "Backend nicht erreichbar." }, { status: 502 }); }
+}
+export function PATCH(request: NextRequest) { return mutate(request, "PATCH"); }
+export function DELETE(request: NextRequest) { return mutate(request, "DELETE"); }

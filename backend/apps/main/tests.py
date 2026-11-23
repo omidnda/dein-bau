@@ -1,3 +1,95 @@
-from django.test import TestCase
+import json
+import tempfile
+from pathlib import Path
 
-# Create your tests here.
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
+from django.test import TestCase, override_settings
+
+from apps.main.models import ContactSubmission, ContentSection, MediaAsset
+
+
+@override_settings(ADMIN_API_TOKEN="test-secret")
+class ContentAndMediaTests(TestCase):
+    def test_contact_status_updates_require_admin_token_and_valid_status(self):
+        item = ContactSubmission.objects.create(name="Test", email="test@example.com", message="Anfrage")
+        url = f"/api/submissions/{item.pk}/"
+        body = json.dumps({"status": "read"})
+        self.assertEqual(self.client.patch(url, body, content_type="application/json").status_code, 401)
+        self.assertEqual(self.client.patch(url, json.dumps({"status": "other"}), content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret").status_code, 400)
+        self.assertEqual(self.client.patch(url, body, content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret").status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.status, "read")
+
+    def test_content_write_requires_token_and_is_publicly_readable(self):
+        data = json.dumps({"key": "site", "value": {"hero": {"title": "Neuer Titel"}}})
+        self.assertEqual(self.client.post("/api/content/sections/", data, content_type="application/json").status_code, 401)
+        self.assertEqual(self.client.post("/api/content/sections/", data, content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret").status_code, 201)
+        self.assertEqual(self.client.get("/api/content/site/").json()["content"]["site"]["hero"]["title"], "Neuer Titel")
+        self.assertEqual(ContentSection.objects.count(), 1)
+
+    def test_media_update_is_protected_and_validated(self):
+        with tempfile.TemporaryDirectory() as directory, self.settings(MEDIA_ROOT=directory):
+            asset = MediaAsset.objects.create(file=SimpleUploadedFile("photo.jpg", b"\xff\xd8\xfftest", content_type="image/jpeg"), original_name="photo.jpg", content_type="image/jpeg")
+            url = f"/api/media/{asset.pk}/"
+            data = json.dumps({"title": "Bad", "alt": "Neues Bad", "category": "Bad", "isFeatured": True})
+            self.assertEqual(self.client.patch(url, data, content_type="application/json").status_code, 401)
+            self.assertEqual(self.client.patch(url, data, content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret").status_code, 200)
+            self.assertEqual(self.client.get("/api/media/public/").json()["results"][0]["title"], "Bad")
+            self.assertEqual(self.client.patch(url, json.dumps({"isFeatured": "yes"}), content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret").status_code, 400)
+
+    def test_reference_import_is_repeatable_and_excludes_portrait(self):
+        with tempfile.TemporaryDirectory() as source, tempfile.TemporaryDirectory() as media, self.settings(MEDIA_ROOT=media):
+            Path(source, "project.jpg").write_bytes(b"\xff\xd8\xfftest")
+            Path(source, "IMG_20261123_002235_850.jpg").write_bytes(b"\xff\xd8\xfftest")
+            call_command("import_reference_photos", source, verbosity=0)
+            call_command("import_reference_photos", source, verbosity=0)
+            self.assertEqual(list(MediaAsset.objects.values_list("original_name", flat=True)), ["project.jpg"])
+
+    def test_video_upload_and_public_listing(self):
+        with tempfile.TemporaryDirectory() as directory, self.settings(MEDIA_ROOT=directory):
+            video = SimpleUploadedFile("project.mp4", b"test video", content_type="video/mp4")
+            response = self.client.post("/api/media/", {"file": video, "title": "Projektvideo"}, HTTP_X_ADMIN_TOKEN="test-secret")
+            self.assertEqual(response.status_code, 201)
+            result = self.client.get("/api/media/public/").json()["results"][0]
+            self.assertEqual((result["mediaType"], result["title"]), ("video", "Projektvideo"))
+
+    def test_home_seed_preserves_existing_content_and_is_repeatable(self):
+        section = ContentSection.objects.create(key="site", value={"hero": {"title": "Existing"}, "home": {"companyHeading": "Custom heading"}})
+        call_command("seed_home_content", verbosity=0)
+        section.refresh_from_db()
+        self.assertEqual(section.value["hero"]["title"], "Existing")
+        self.assertEqual(section.value["home"]["companyHeading"], "Custom heading")
+        self.assertIn("companyImage", section.value["home"])
+        snapshot = section.value
+        call_command("seed_home_content", verbosity=0)
+        section.refresh_from_db()
+        self.assertEqual(section.value, snapshot)
+
+    def test_faq_seed_preserves_editor_content_and_is_repeatable(self):
+        section = ContentSection.objects.create(key="site", value={"faq": {"title": "Custom FAQ", "questions": [{"title": "Question", "text": "Answer"}]}, "nav": [{"label": "Home", "href": "/"}]})
+        call_command("seed_faq_content", verbosity=0)
+        section.refresh_from_db()
+        self.assertEqual(section.value["faq"]["title"], "Custom FAQ")
+        self.assertEqual(section.value["faq"]["questions"][0]["text"], "Answer")
+        self.assertEqual(section.value["nav"][-1]["href"], "/faq")
+        snapshot = section.value
+        call_command("seed_faq_content", verbosity=0)
+        section.refresh_from_db()
+        self.assertEqual(section.value, snapshot)
+
+    def test_legal_seed_and_content_updates_preserve_existing_fields(self):
+        section = ContentSection.objects.create(key="site", value={"company": {"name": "Existing"}, "legal": {"impressum": {"vatId": "DE123", "sections": [{"title": "Test", "text": "Existing text"}]}}})
+        call_command("seed_legal_content", verbosity=0)
+        section.refresh_from_db()
+        self.assertEqual(section.value["legal"]["impressum"]["vatId"], "DE123")
+        self.assertEqual(section.value["legal"]["impressum"]["sections"][0]["text"], "Existing text")
+        self.assertIn("datenschutz", section.value["legal"])
+        snapshot = section.value
+        call_command("seed_legal_content", verbosity=0)
+        section.refresh_from_db()
+        self.assertEqual(section.value, snapshot)
+        snapshot["legal"]["datenschutz"]["sections"] = [{"title": "Privacy", "text": "Updated"}]
+        response = self.client.put("/api/content/sections/site/", json.dumps({"value": snapshot}), content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get("/api/content/site/").json()["content"]["site"]["legal"]["datenschutz"]["sections"][0]["text"], "Updated")
