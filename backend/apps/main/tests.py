@@ -69,6 +69,30 @@ class ContentAndMediaTests(TestCase):
             result = self.client.get("/api/media/public/").json()["results"][0]
             self.assertEqual((result["mediaType"], result["title"]), ("video", "Projektvideo"))
 
+    def test_upload_selection_replacement_and_removal_preserve_library(self):
+        with tempfile.TemporaryDirectory() as directory, self.settings(MEDIA_ROOT=directory):
+            def upload(name):
+                return self.client.post("/api/media/", {"file": SimpleUploadedFile(name, b"\xff\xd8\xfftest", content_type="image/jpeg")}, HTTP_X_ADMIN_TOKEN="test-secret")
+            first = upload("first.jpg")
+            second = upload("second.jpg")
+            self.assertEqual((first.status_code, second.status_code), (201, 201))
+            ContentSection.objects.create(key="site", value={})
+            for url in (first.json()["url"], second.json()["url"], ""):
+                data = {"value": {"gallery": {"projects": [{"title": "Bad", "text": "Arbeit", "beforeImage": url, "afterImage": ""}]}}}
+                response = self.client.put("/api/content/sections/site/", json.dumps(data), content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret")
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(self.client.get("/api/content/site/").json()["content"]["site"]["gallery"]["projects"][0]["beforeImage"], url)
+            self.assertEqual(MediaAsset.objects.count(), 2)
+
+    def test_upload_accepts_video_larger_than_previous_limit_and_rejects_bad_type(self):
+        with tempfile.TemporaryDirectory() as directory, self.settings(MEDIA_ROOT=directory):
+            video = SimpleUploadedFile("mobile.mp4", b"x" * (10 * 1024 * 1024 + 1), content_type="video/mp4")
+            response = self.client.post("/api/media/", {"file": video}, HTTP_X_ADMIN_TOKEN="test-secret")
+            self.assertEqual(response.status_code, 201)
+            bad = SimpleUploadedFile("bad.jpg", b"not an image", content_type="image/jpeg")
+            self.assertEqual(self.client.post("/api/media/", {"file": bad}, HTTP_X_ADMIN_TOKEN="test-secret").status_code, 400)
+            self.assertEqual(MediaAsset.objects.count(), 1)
+
     def test_home_seed_preserves_existing_content_and_is_repeatable(self):
         section = ContentSection.objects.create(key="site", value={"hero": {"title": "Existing"}, "home": {"companyHeading": "Custom heading"}})
         call_command("seed_home_content", verbosity=0)

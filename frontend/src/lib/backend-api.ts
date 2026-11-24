@@ -23,10 +23,8 @@ export async function fetchBackend(path: string, init?: RequestInit) {
 
   for (const base of apiBases()) {
     try {
-      const timeoutSignal = AbortSignal.timeout(5000);
-      const signal = init?.signal
-        ? AbortSignal.any([init.signal, timeoutSignal])
-        : timeoutSignal;
+      const timeoutSignal = init?.signal ?? AbortSignal.timeout(5000);
+      const signal = timeoutSignal;
       return await fetch(`${base}${path}`, { ...init, signal });
     } catch (error) {
       networkError = error;

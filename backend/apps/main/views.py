@@ -219,8 +219,8 @@ def media_list(request):
     uploaded = request.FILES.get("file")
     if not uploaded:
         return JsonResponse({"detail": "file is required."}, status=400)
-    if uploaded.size > 10 * 1024 * 1024:
-        return JsonResponse({"detail": "Files may not exceed 10 MB."}, status=400)
+    if uploaded.size > 200 * 1024 * 1024:
+        return JsonResponse({"detail": "Die Datei darf höchstens 200 MB groß sein."}, status=400)
     if not valid_uploaded_media(uploaded):
         return JsonResponse({"detail": "Only valid JPG, PNG, WebP, MP4, WebM, and MOV files are allowed."}, status=400)
 
