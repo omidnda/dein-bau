@@ -9,6 +9,21 @@ from django.test import TestCase, override_settings
 from apps.main.models import ContactSubmission, ContentSection, MediaAsset
 
 
+class SecurityHeadersTests(TestCase):
+    def test_headers_on_normal_error_and_preflight_responses(self):
+        responses = [
+            self.client.get("/api/media/public/"),
+            self.client.get("/missing/"),
+            self.client.options("/api/media/public/", HTTP_ORIGIN="http://localhost:3000", HTTP_ACCESS_CONTROL_REQUEST_METHOD="GET"),
+        ]
+        for response in responses:
+            with self.subTest(status=response.status_code):
+                self.assertEqual(response["X-Frame-Options"], "DENY")
+                self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+                self.assertIn("frame-ancestors 'none'", response["Content-Security-Policy"])
+                self.assertIn("camera=()", response["Permissions-Policy"])
+
+
 @override_settings(ADMIN_API_TOKEN="test-secret")
 class ContentAndMediaTests(TestCase):
     def test_contact_status_updates_require_admin_token_and_valid_status(self):
