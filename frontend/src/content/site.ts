@@ -11,7 +11,7 @@ export type HomeContent = {
   trustEyebrow: string; trustHeading: string; trustPoints: { title: string; text: string }[];
   comparisonEyebrow: string; comparisonHeading: string; comparisonText: string; beforeImage: string; afterImage: string; comparisonDisclaimer: string;
   processEyebrow: string; processHeading: string; steps: { title: string; text: string }[];
-  galleryEyebrow: string; galleryHeading: string; galleryLink: string;
+  galleryEyebrow: string; galleryHeading: string; galleryLink: string; galleryMediaIds?: (number | string)[];
   reviewsEyebrow: string; reviewsHeading: string; reviewsText: string; reviewsListHeading: string; reviewsButton: string;
   contactEyebrow: string;
 };
@@ -23,7 +23,7 @@ export type SiteContent = {
   home: HomeContent;
   services: Service[];
   about: { intro: string; points: { title: string; text: string }[] };
-  gallery: { intro: string; projects: { title: string; text: string; beforeImage?: string; afterImage?: string }[] };
+  gallery: { intro: string; mediaIds?: (number | string)[]; projects: { title: string; text: string; beforeImage?: string; afterImage?: string }[] };
   legal: { impressum: { title: string; vatId: string; registerCourt: string; registerNumber: string; sections: { title: string; text: string }[] }; datenschutz: { title: string; sections: { title: string; text: string }[] } };
   faq: { eyebrow: string; title: string; intro: string; questions: { title: string; text: string }[] };
   aboutImage: string;
@@ -100,6 +100,13 @@ export async function getRevalidatedSiteContent(): Promise<SiteContent> {
   return mergeContent(payload.content?.site);
 }
 
+
+export function selectGalleryMedia(media: MediaAsset[], ids: (number | string)[] | undefined, limit?: number): MediaAsset[] {
+  const selected = ids === undefined
+    ? media.filter((item) => item.category === "Projektaufnahmen")
+    : ids.flatMap((id) => media.find((item) => String(item.id) === String(id)) ?? []);
+  return limit === undefined ? selected : selected.slice(0, limit);
+}
 
 export async function getGalleryMedia(): Promise<MediaAsset[]> {
   try {
