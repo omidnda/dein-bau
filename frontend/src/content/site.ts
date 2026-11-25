@@ -3,6 +3,8 @@ import { fetchBackend } from "@/lib/backend-api";
 export type Service = { slug: string; title: string; summary: string; details: string; image: string };
 export type MediaAsset = { id: number | string; name: string; contentType: string; mediaType: "image" | "video"; title: string; alt: string; category: string; isFeatured: boolean; url: string };
 
+export type ReferenceProject = { title: string; text: string; beforeImage?: string; afterImage?: string; mediaIds?: (number | string)[] };
+
 export type HomeContent = {
   heroSecondary: string; heroProof: string; heroImageLabel: string; heroSecondImage: string; heroThirdImage: string;
   servicesEyebrow: string; servicesHeading: string; servicesLink: string; serviceLink: string;
@@ -23,7 +25,7 @@ export type SiteContent = {
   home: HomeContent;
   services: Service[];
   about: { intro: string; points: { title: string; text: string }[] };
-  gallery: { intro: string; mediaIds?: (number | string)[]; projects: { title: string; text: string; beforeImage?: string; afterImage?: string }[] };
+  gallery: { intro: string; mediaIds?: (number | string)[]; projects: ReferenceProject[] };
   legal: { impressum: { title: string; vatId: string; registerCourt: string; registerNumber: string; sections: { title: string; text: string }[] }; datenschutz: { title: string; sections: { title: string; text: string }[] } };
   faq: { eyebrow: string; title: string; intro: string; questions: { title: string; text: string }[] };
   aboutImage: string;

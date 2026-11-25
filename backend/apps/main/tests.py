@@ -84,6 +84,17 @@ class ContentAndMediaTests(TestCase):
                 self.assertEqual(self.client.get("/api/content/site/").json()["content"]["site"]["gallery"]["projects"][0]["beforeImage"], url)
             self.assertEqual(MediaAsset.objects.count(), 2)
 
+    def test_reference_projects_keep_independent_ordered_media_and_comparisons(self):
+        ContentSection.objects.create(key="site", value={})
+        projects = [
+            {"title": "First", "text": "Description", "beforeImage": "/before.jpg", "afterImage": "/after.jpg", "mediaIds": [3, 1]},
+            {"title": "Second", "text": "Other project", "beforeImage": "", "afterImage": "", "mediaIds": [2]},
+        ]
+        response = self.client.put("/api/content/sections/site/", json.dumps({"value": {"gallery": {"projects": projects}}}), content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret")
+        self.assertEqual(response.status_code, 200)
+        stored = self.client.get("/api/content/site/").json()["content"]["site"]["gallery"]["projects"]
+        self.assertEqual(stored, projects)
+
     def test_upload_accepts_video_larger_than_previous_limit_and_rejects_bad_type(self):
         with tempfile.TemporaryDirectory() as directory, self.settings(MEDIA_ROOT=directory):
             video = SimpleUploadedFile("mobile.mp4", b"x" * (10 * 1024 * 1024 + 1), content_type="video/mp4")
