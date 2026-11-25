@@ -201,8 +201,6 @@ html { scroll-behavior:auto; } body { background:#fff; } .container { width:min(
 .comparison-selection { margin-top:20px; justify-content:space-between; }
 .comparison-selection button, .comparison-pick button { border:1px solid var(--line); background:white; color:var(--navy); padding:10px; cursor:pointer; }
 .comparison-pick { margin-bottom:20px; }
-.comparison-description { display:grid; gap:8px; color:var(--navy); margin:20px 0 8px; }
-.comparison-description textarea { width:100%; border:1px solid var(--line); background:white; padding:12px; font:inherit; }
 
 .gallery-item .gallery-card { width:100%; }
 .admin-fieldset { border:1px solid var(--line); padding:18px; display:grid; gap:12px; min-width:0; }
@@ -439,3 +437,7 @@ html { scroll-behavior:auto; } body { background:#fff; } .container { width:min(
 .admin-project-group-heading { display:grid; gap:6px; border-top:1px solid var(--line); padding-top:18px; color:var(--navy); }
 .admin-project-group-heading strong span { color:var(--muted); font-size:12px; font-weight:400; }
 @media(max-width:700px) { .admin-reference-nav { grid-template-columns:1fr; } .admin-project-content { padding:14px; } .admin-project-summary { padding:14px; } }
+
+.admin-message-delete { color:#a12626; border-color:#d9baba; cursor:pointer; }
+.admin-message-delete:hover:not(:disabled) { background:#fff1f1; }
+.admin-message-delete:disabled { opacity:.5; cursor:not-allowed; }

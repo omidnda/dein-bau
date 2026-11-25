@@ -36,6 +36,18 @@ class ContentAndMediaTests(TestCase):
         item.refresh_from_db()
         self.assertEqual(item.status, "read")
 
+    def test_contact_deletion_requires_admin_and_removes_only_requested_message(self):
+        item = ContactSubmission.objects.create(name="First", email="first@example.com", message="Anfrage")
+        other = ContactSubmission.objects.create(name="Second", email="second@example.com", message="Andere Anfrage")
+        url = f"/api/submissions/{item.pk}/"
+        self.assertEqual(self.client.delete(url).status_code, 401)
+        self.assertTrue(ContactSubmission.objects.filter(pk=item.pk).exists())
+        self.assertEqual(self.client.delete(url, HTTP_X_ADMIN_TOKEN="wrong").status_code, 401)
+        self.assertEqual(self.client.delete(url, HTTP_X_ADMIN_TOKEN="test-secret").status_code, 204)
+        self.assertFalse(ContactSubmission.objects.filter(pk=item.pk).exists())
+        self.assertTrue(ContactSubmission.objects.filter(pk=other.pk).exists())
+        self.assertEqual(self.client.delete(url, HTTP_X_ADMIN_TOKEN="test-secret").status_code, 404)
+
     def test_content_write_requires_token_and_is_publicly_readable(self):
         data = json.dumps({"key": "site", "value": {"hero": {"title": "Neuer Titel"}}})
         self.assertEqual(self.client.post("/api/content/sections/", data, content_type="application/json").status_code, 401)
