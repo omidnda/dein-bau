@@ -25,7 +25,7 @@ export type SiteContent = {
   home: HomeContent;
   services: Service[];
   about: { intro: string; points: { title: string; text: string }[] };
-  gallery: { intro: string; mediaIds?: (number | string)[]; projects: ReferenceProject[] };
+  gallery: { intro: string; mediaIds?: (number | string)[]; mediaDescriptions?: Record<string, string>; projects: ReferenceProject[] };
   legal: { impressum: { title: string; vatId: string; registerCourt: string; registerNumber: string; sections: { title: string; text: string }[] }; datenschutz: { title: string; sections: { title: string; text: string }[] } };
   faq: { eyebrow: string; title: string; intro: string; questions: { title: string; text: string }[] };
   aboutImage: string;

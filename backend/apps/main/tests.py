@@ -102,10 +102,11 @@ class ContentAndMediaTests(TestCase):
             {"title": "First", "text": "Description", "beforeImage": "/before.jpg", "afterImage": "/after.jpg", "mediaIds": [3, 1]},
             {"title": "Second", "text": "Other project", "beforeImage": "", "afterImage": "", "mediaIds": [2]},
         ]
-        response = self.client.put("/api/content/sections/site/", json.dumps({"value": {"gallery": {"projects": projects}}}), content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret")
+        gallery = {"projects": projects, "mediaDescriptions": {"1": "Bodenarbeiten", "2": "Projektvideo"}}
+        response = self.client.put("/api/content/sections/site/", json.dumps({"value": {"gallery": gallery}}), content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret")
         self.assertEqual(response.status_code, 200)
-        stored = self.client.get("/api/content/site/").json()["content"]["site"]["gallery"]["projects"]
-        self.assertEqual(stored, projects)
+        stored = self.client.get("/api/content/site/").json()["content"]["site"]["gallery"]
+        self.assertEqual(stored, gallery)
 
     def test_upload_accepts_video_larger_than_previous_limit_and_rejects_bad_type(self):
         with tempfile.TemporaryDirectory() as directory, self.settings(MEDIA_ROOT=directory):
