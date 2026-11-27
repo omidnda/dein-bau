@@ -2,6 +2,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import AdminReviews from "@/components/AdminReviews";
+import AdminProjects from "@/components/AdminProjects";
 import LegalEditor from "@/components/LegalEditor";
 import MediaPicker from "@/components/MediaPicker";
 import {
@@ -273,8 +274,7 @@ const panels: { group: string; items: Panel[] }[] = [
       {
         id: "gallery",
         label: "Referenzen",
-        description:
-          "Projektverwaltung für die Referenzseite.",
+        description: "Projektverwaltung für die Referenzseite.",
         paths: [["pageCopy", "gallery"], ["gallery"]],
       },
       {
@@ -411,8 +411,15 @@ export default function AdminDashboard() {
   }
   async function saveContent() {
     const serviceSlugs = content.services.map((service) => service.slug.trim());
-    if (content.services.some((service) => !service.title.trim() || !service.slug.trim()) || new Set(serviceSlugs).size !== serviceSlugs.length) {
-      setNotice("Bitte geben Sie für jede Leistung einen Titel und eine eindeutige URL-Kennung ein.");
+    if (
+      content.services.some(
+        (service) => !service.title.trim() || !service.slug.trim(),
+      ) ||
+      new Set(serviceSlugs).size !== serviceSlugs.length
+    ) {
+      setNotice(
+        "Bitte geben Sie für jede Leistung einen Titel und eine eindeutige URL-Kennung ein.",
+      );
       return;
     }
     setBusy(true);
@@ -867,7 +874,13 @@ export default function AdminDashboard() {
       return (
         <fieldset className="admin-fieldset" key={path.join(".")}>
           <legend>{labels[String(path.at(-1))] ?? String(path.at(-1))}</legend>
-          {path.join(".") === "services" && <p>Diese Liste bestimmt Anzahl und Reihenfolge der Leistungen auf der Startseite und der Leistungsseite. Änderungen werden nach dem Speichern veröffentlicht.</p>}
+          {path.join(".") === "services" && (
+            <p>
+              Diese Liste bestimmt Anzahl und Reihenfolge der Leistungen auf der
+              Startseite und der Leistungsseite. Änderungen werden nach dem
+              Speichern veröffentlicht.
+            </p>
+          )}
           {value.map((item, index) => (
             <div className="admin-array-item" key={index}>
               <strong>
@@ -879,11 +892,52 @@ export default function AdminDashboard() {
                   : index + 1}
               </strong>
               {fields(item, [...path, index])}
-              {path.join(".") === "services" && <div>
-                <button type="button" className="filter" disabled={index === 0} onClick={() => { const next = [...value]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; update(path, next); }}>Nach oben</button>{" "}
-                <button type="button" className="filter" disabled={index === value.length - 1} onClick={() => { const next = [...value]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; update(path, next); }}>Nach unten</button>{" "}
-                <button type="button" className="filter" onClick={() => update(path, value.filter((_, i) => i !== index))}>Leistung entfernen</button>
-              </div>}
+              {path.join(".") === "services" && (
+                <div>
+                  <button
+                    type="button"
+                    className="filter"
+                    disabled={index === 0}
+                    onClick={() => {
+                      const next = [...value];
+                      [next[index - 1], next[index]] = [
+                        next[index],
+                        next[index - 1],
+                      ];
+                      update(path, next);
+                    }}
+                  >
+                    Nach oben
+                  </button>{" "}
+                  <button
+                    type="button"
+                    className="filter"
+                    disabled={index === value.length - 1}
+                    onClick={() => {
+                      const next = [...value];
+                      [next[index], next[index + 1]] = [
+                        next[index + 1],
+                        next[index],
+                      ];
+                      update(path, next);
+                    }}
+                  >
+                    Nach unten
+                  </button>{" "}
+                  <button
+                    type="button"
+                    className="filter"
+                    onClick={() =>
+                      update(
+                        path,
+                        value.filter((_, i) => i !== index),
+                      )
+                    }
+                  >
+                    Leistung entfernen
+                  </button>
+                </div>
+              )}
               {["projects", "points", "questions", "sections"].includes(
                 String(path.at(-1)),
               ) && (
@@ -902,11 +956,33 @@ export default function AdminDashboard() {
               )}
             </div>
           ))}
-          {path.join(".") === "services" && <button type="button" className="filter" onClick={() => {
-            let number = 1;
-            while (content.services.some((service) => service.slug === `neue-leistung-${number}`)) number++;
-            update(path, [...value, { slug: `neue-leistung-${number}`, title: "", summary: "", details: "", image: "" }]);
-          }}>Leistung hinzufügen</button>}
+          {path.join(".") === "services" && (
+            <button
+              type="button"
+              className="filter"
+              onClick={() => {
+                let number = 1;
+                while (
+                  content.services.some(
+                    (service) => service.slug === `neue-leistung-${number}`,
+                  )
+                )
+                  number++;
+                update(path, [
+                  ...value,
+                  {
+                    slug: `neue-leistung-${number}`,
+                    title: "",
+                    summary: "",
+                    details: "",
+                    image: "",
+                  },
+                ]);
+              }}
+            >
+              Leistung hinzufügen
+            </button>
+          )}
           {["projects", "points", "questions", "sections"].includes(
             String(path.at(-1)),
           ) && (
@@ -1328,15 +1404,7 @@ export default function AdminDashboard() {
               </button>
             </section>
           )}
-        {activePanel === "gallery" && (
-          <section className="admin-card admin-reference-editor">
-            <p className="eyebrow">Referenzen</p>
-            <h2>Projekte verwalten</h2>
-            <p>Die Referenzseite zeigt veröffentlichte Projekte mit ihren zugeordneten Bildern und Videos. Projekte, Titelbild, Ort, Kategorie, Beschreibung und Reihenfolge werden in der Django-Verwaltung unter „Projekte“ bearbeitet.</p>
-            <p>Die bisherige Auswahl der allgemeinen Fotogalerie wird auf der neuen Referenzseite nicht mehr angezeigt. Die Bildauswahl für die Startseite bleibt separat.</p>
-            <a className="text-link" href="/gallery" target="_blank" rel="noreferrer">Referenzseite ansehen ↗</a>
-          </section>
-        )}
+        {activePanel === "gallery" && <AdminProjects media={media} onUploaded={(asset) => setMedia((items) => [asset, ...items])} />}
         {activePanel === "media" && (
           <section className="admin-card">
             <h2>Medien verwalten</h2>

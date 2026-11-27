@@ -8,6 +8,7 @@ urlpatterns = [
     path("content/sections/", views.section_list, name="content-section-list"),
     path("content/sections/<slug:key>/", views.section_detail, name="content-section-detail"),
     path("media/", views.media_list, name="media-list"),
+    path("gallery/admin/", views.gallery_admin, name="gallery-admin"),
     path("gallery/projects/", views.gallery_projects, name="gallery-projects"),
     path("media/public/", views.public_media_list, name="public-media-list"),
     path("media/<int:pk>/", views.media_detail, name="media-detail"),

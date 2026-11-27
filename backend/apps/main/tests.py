@@ -160,7 +160,7 @@ class ContentAndMediaTests(TestCase):
 
 class GalleryProjectApiTests(TestCase):
     def test_only_published_projects_and_ordered_explicit_media_are_returned(self):
-        from .models import GalleryProject, GalleryProjectMedia, MediaAsset
+        from apps.main.models import GalleryProject, GalleryProjectMedia, MediaAsset
 
         first = MediaAsset.objects.create(file='site/first.jpg', original_name='first.jpg', content_type='image/jpeg', media_type='image')
         second = MediaAsset.objects.create(file='site/second.mp4', original_name='second.mp4', content_type='video/mp4', media_type='video')
@@ -174,3 +174,20 @@ class GalleryProjectApiTests(TestCase):
         self.assertEqual([item['slug'] for item in projects], ['referenz'])
         self.assertEqual([item['id'] for item in projects[0]['media']], [second.id, first.id])
         self.assertEqual(projects[0]['media'][0]['poster']['id'], first.id)
+
+
+@override_settings(ADMIN_API_TOKEN="test-secret")
+class GalleryAdminTests(TestCase):
+    def test_create_update_and_protected_access(self):
+        from apps.main.models import MediaAsset
+        image = MediaAsset.objects.create(file='site/test.jpg', original_name='test.jpg', content_type='image/jpeg', media_type='image')
+        data = {'title': 'Projekt', 'slug': '', 'description': '', 'location': '', 'category': '', 'published': False, 'sortOrder': 0, 'coverId': image.id, 'media': [{'id': image.id, 'posterId': None}]}
+        self.assertEqual(self.client.get('/api/gallery/admin/').status_code, 401)
+        response = self.client.post('/api/gallery/admin/', data=json.dumps(data), content_type='application/json', HTTP_X_ADMIN_TOKEN='test-secret')
+        self.assertEqual(response.status_code, 201)
+        project = response.json()
+        self.assertEqual(project['media'][0]['id'], image.id)
+        data.update(id=project['id'], slug=project['slug'], published=True)
+        response = self.client.put('/api/gallery/admin/', data=json.dumps(data), content_type='application/json', HTTP_X_ADMIN_TOKEN='test-secret')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get('/api/gallery/projects/').json()['results'][0]['title'], 'Projekt')

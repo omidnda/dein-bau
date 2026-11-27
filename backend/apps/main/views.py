@@ -389,3 +389,67 @@ def gallery_projects(request):
                         'location': project.location, 'category': project.category,
                         'cover': serialize_media(project.cover) if project.cover else None, 'media': items})
     return JsonResponse({'results': results})
+
+
+@csrf_exempt
+@require_http_methods(['GET', 'POST', 'PUT', 'DELETE'])
+@require_admin_token
+def gallery_admin(request):
+    from django.db import transaction
+    from django.utils.text import slugify
+    from .models import GalleryProject, GalleryProjectMedia
+
+    def serialize(project):
+        return {'id': project.pk, 'title': project.title, 'slug': project.slug,
+                'description': project.description, 'location': project.location,
+                'category': project.category, 'published': project.published,
+                'sortOrder': project.sort_order, 'coverId': project.cover_id,
+                'media': [{'id': item.media_id, 'posterId': item.poster_id} for item in project.galleryprojectmedia_set.all()]}
+
+    if request.method == 'GET':
+        return JsonResponse({'results': [serialize(p) for p in GalleryProject.objects.prefetch_related('galleryprojectmedia_set')]})
+    try:
+        data = parse_json(request)
+        project_id = data.get('id')
+        if request.method != 'POST':
+            project = GalleryProject.objects.filter(pk=project_id).first()
+            if not project:
+                return JsonResponse({'detail': 'Projekt nicht gefunden.'}, status=404)
+        else:
+            project = GalleryProject()
+        if request.method == 'DELETE':
+            project.delete()
+            return HttpResponse(status=204)
+        for field in ('title', 'description', 'location', 'category', 'slug'):
+            if not isinstance(data.get(field, ''), str):
+                raise ValidationError('Ungültige Projektangaben.')
+        project.title = data.get('title', '').strip()
+        project.slug = data.get('slug', '').strip() or slugify(project.title)
+        project.description = data.get('description', '').strip()
+        project.location = data.get('location', '').strip()
+        project.category = data.get('category', '').strip()
+        project.published = data.get('published', False)
+        project.sort_order = data.get('sortOrder', 0)
+        if not isinstance(project.published, bool) or type(project.sort_order) is not int or project.sort_order < 0:
+            raise ValidationError('Ungültige Veröffentlichung oder Reihenfolge.')
+        cover_id = data.get('coverId')
+        project.cover = MediaAsset.objects.filter(pk=cover_id, media_type='image').first() if cover_id else None
+        if cover_id and not project.cover:
+            raise ValidationError('Das Titelbild ist ungültig.')
+        entries = data.get('media', [])
+        if not isinstance(entries, list) or any(not isinstance(entry, dict) or type(entry.get('id')) is not int or (entry.get('posterId') is not None and type(entry.get('posterId')) is not int) for entry in entries):
+            raise ValidationError('Ungültige Medienauswahl.')
+        ids = [entry['id'] for entry in entries]
+        if len(ids) != len(set(ids)) or MediaAsset.objects.filter(pk__in=ids).count() != len(ids):
+            raise ValidationError('Medienauswahl enthält ungültige oder doppelte Dateien.')
+        posters = [entry['posterId'] for entry in entries if entry.get('posterId') is not None]
+        if MediaAsset.objects.filter(pk__in=set(posters), media_type='image').count() != len(set(posters)):
+            raise ValidationError('Das Videovorschaubild ist ungültig.')
+        project.full_clean()
+        with transaction.atomic():
+            project.save()
+            project.galleryprojectmedia_set.all().delete()
+            GalleryProjectMedia.objects.bulk_create([GalleryProjectMedia(project=project, media_id=entry['id'], poster_id=entry.get('posterId'), sort_order=i) for i, entry in enumerate(entries)])
+        return JsonResponse(serialize(project), status=201 if request.method == 'POST' else 200)
+    except (ValidationError, ValueError, TypeError, IntegrityError) as exc:
+        return JsonResponse({'detail': 'Projekt konnte nicht gespeichert werden. Bitte Angaben und URL-Kennung prüfen.'}, status=400)

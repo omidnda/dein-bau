@@ -470,3 +470,7 @@ html { scroll-behavior:auto; } body { background:#fff; } .container { width:min(
 .contact-page-intro { padding:64px 0 6px; }
 .contact-page-content { padding-top:6px; }
 @media (max-width:540px) { .contact-page-intro { padding:44px 0 6px; } .contact-page-content { padding-top:6px; } }
+
+@media (min-width:901px) and (max-width:1600px) {
+  .hero-grid { padding-block:48px 32px; }
+}
