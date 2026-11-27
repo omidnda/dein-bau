@@ -156,3 +156,21 @@ class ContentAndMediaTests(TestCase):
         response = self.client.put("/api/content/sections/site/", json.dumps({"value": snapshot}), content_type="application/json", HTTP_X_ADMIN_TOKEN="test-secret")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.client.get("/api/content/site/").json()["content"]["site"]["legal"]["datenschutz"]["sections"][0]["text"], "Updated")
+
+
+class GalleryProjectApiTests(TestCase):
+    def test_only_published_projects_and_ordered_explicit_media_are_returned(self):
+        from .models import GalleryProject, GalleryProjectMedia, MediaAsset
+
+        first = MediaAsset.objects.create(file='site/first.jpg', original_name='first.jpg', content_type='image/jpeg', media_type='image')
+        second = MediaAsset.objects.create(file='site/second.mp4', original_name='second.mp4', content_type='video/mp4', media_type='video')
+        project = GalleryProject.objects.create(title='Referenz', slug='referenz', published=True, cover=first)
+        GalleryProject.objects.create(title='Entwurf', slug='entwurf', published=False)
+        GalleryProjectMedia.objects.create(project=project, media=first, sort_order=2)
+        GalleryProjectMedia.objects.create(project=project, media=second, sort_order=1, poster=first)
+        response = self.client.get('/api/gallery/projects/')
+        self.assertEqual(response.status_code, 200)
+        projects = response.json()['results']
+        self.assertEqual([item['slug'] for item in projects], ['referenz'])
+        self.assertEqual([item['id'] for item in projects[0]['media']], [second.id, first.id])
+        self.assertEqual(projects[0]['media'][0]['poster']['id'], first.id)

@@ -371,3 +371,21 @@ def submission_detail(request, pk):
     except ValidationError as exc:
         return JsonResponse({"detail": exc.message_dict if hasattr(exc, "message_dict") else exc.messages}, status=400)
     return JsonResponse(serialize_submission(submission))
+
+
+@require_http_methods(['GET'])
+def gallery_projects(request):
+    from .models import GalleryProject
+
+    projects = GalleryProject.objects.filter(published=True).select_related('cover').prefetch_related('galleryprojectmedia_set__media', 'galleryprojectmedia_set__poster')
+    results = []
+    for project in projects:
+        items = []
+        for entry in project.galleryprojectmedia_set.all():
+            item = serialize_media(entry.media)
+            item['poster'] = serialize_media(entry.poster) if entry.poster else None
+            items.append(item)
+        results.append({'title': project.title, 'slug': project.slug, 'description': project.description,
+                        'location': project.location, 'category': project.category,
+                        'cover': serialize_media(project.cover) if project.cover else None, 'media': items})
+    return JsonResponse({'results': results})

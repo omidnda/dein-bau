@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Phone } from "lucide-react";
 import Image from "next/image";
 import { getSiteContent, type SiteContent } from "@/content/site";
 
@@ -9,7 +10,7 @@ export default async function SiteHeader({
   phone?: string;
   siteContent?: SiteContent;
 }) {
-  const content = siteContent ?? await getSiteContent();
+  const content = siteContent ?? (await getSiteContent());
   return (
     <header className="site-header">
       <Link className="brand" href="/">
@@ -25,12 +26,19 @@ export default async function SiteHeader({
         </span> */}
       </Link>
       <nav aria-label="Hauptnavigation">
-        {content.nav.map((item) => <Link key={item.href} href={item.href}>{item.label}</Link>)}
+        {content.nav.map((item) => (
+          <Link key={item.href} href={item.href}>
+            {item.label}
+          </Link>
+        ))}
       </nav>
       <a className="header-phone" href="/kontakt">
         <span>↗</span>
         {phone}
       </a>
+      <div className="mobile-header-actions">
+        <a href={`tel:${content.company.phone.replace(/[^\d+]/g, "")}`} aria-label="Jetzt anrufen"><Phone size={20} aria-hidden="true" /></a>
+      </div>
       <details className="mobile-nav">
         <summary aria-label="Navigation öffnen">
           <span />
@@ -38,7 +46,11 @@ export default async function SiteHeader({
           <span />
         </summary>
         <nav aria-label="Mobile Navigation">
-          {content.nav.map((item) => <Link key={item.href} href={item.href}>{item.label}</Link>)}
+          {content.nav.map((item) => (
+            <Link key={item.href} href={item.href}>
+              {item.label}
+            </Link>
+          ))}
         </nav>
       </details>
     </header>

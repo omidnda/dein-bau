@@ -452,3 +452,21 @@ html { scroll-behavior:auto; } body { background:#fff; } .container { width:min(
 .admin-gallery-description { display:grid; grid-template-columns:100px minmax(0,1fr); align-items:start; gap:12px; }
 .admin-gallery-description > img,.admin-gallery-description > video { width:100px; height:70px; object-fit:cover; background:var(--pale); }
 @media(max-width:540px) { .admin-gallery-description { grid-template-columns:70px minmax(0,1fr); } .admin-gallery-description > img,.admin-gallery-description > video { width:70px; height:55px; } }
+
+.mobile-header-actions { display:none; }
+.contact-address .contact-icon-row, .footer-main .contact-icon-row { display:flex; align-items:center; gap:10px; }
+.footer-main .contact-icon-row span { display:inline; margin:0; }
+.contact-icon-row svg { flex:none; }
+.footer-address { color:#B8C8D5; font-size:14px; }
+@media (max-width:900px) { .mobile-header-actions { display:flex; align-items:center; gap:4px; } .mobile-header-actions a { display:grid; place-items:center; width:44px; height:44px; color:#fff; background:var(--blue); border:1px solid var(--blue); border-radius:3px; transition:background-color .2s ease; } .mobile-header-actions a:hover { background:var(--navy); } .mobile-header-actions a:focus-visible { outline:3px solid var(--orange, #F28C28); outline-offset:3px; } .header-phone { display:none; } }
+
+/* Service cards follow the actual number of configured services. */
+.editorial-service:last-child { grid-column:auto; width:auto; justify-self:stretch; }
+
+.services-page-intro { padding:64px 0 12px; }
+.services-page-list { padding-top:12px; }
+@media (max-width:540px) { .services-page-intro { padding:44px 0 10px; } .services-page-list { padding-top:10px; } }
+
+.contact-page-intro { padding:64px 0 6px; }
+.contact-page-content { padding-top:6px; }
+@media (max-width:540px) { .contact-page-intro { padding:44px 0 6px; } .contact-page-content { padding-top:6px; } }

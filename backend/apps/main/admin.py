@@ -25,3 +25,21 @@ class ContactSubmissionAdmin(admin.ModelAdmin):
     list_display = ("name", "email", "service", "status", "created_at")
     list_filter = ("status", "created_at")
     search_fields = ("name", "email", "message")
+
+
+from .models import GalleryProject, GalleryProjectMedia
+
+
+class GalleryProjectMediaInline(admin.TabularInline):
+    model = GalleryProjectMedia
+    extra = 1
+    autocomplete_fields = ('media', 'poster')
+
+
+@admin.register(GalleryProject)
+class GalleryProjectAdmin(admin.ModelAdmin):
+    list_display = ('title', 'location', 'category', 'published', 'sort_order')
+    list_editable = ('published', 'sort_order')
+    prepopulated_fields = {'slug': ('title',)}
+    autocomplete_fields = ('cover',)
+    inlines = (GalleryProjectMediaInline,)

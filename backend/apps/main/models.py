@@ -69,3 +69,36 @@ class ContactSubmission(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.email}"
+
+
+class GalleryProject(models.Model):
+    title = models.CharField('Titel', max_length=160)
+    slug = models.SlugField('URL', unique=True)
+    description = models.TextField('Beschreibung', blank=True)
+    location = models.CharField('Ort', max_length=160, blank=True)
+    category = models.CharField('Kategorie', max_length=80, blank=True)
+    cover = models.ForeignKey(MediaAsset, verbose_name='Titelbild', null=True, blank=True, on_delete=models.SET_NULL, related_name='+', limit_choices_to={'media_type': 'image'})
+    published = models.BooleanField('Veröffentlicht', default=False)
+    sort_order = models.PositiveIntegerField('Reihenfolge', default=0)
+    media = models.ManyToManyField(MediaAsset, through='GalleryProjectMedia', through_fields=('project', 'media'), related_name='gallery_projects')
+
+    class Meta:
+        ordering = ('sort_order', 'pk')
+        verbose_name = 'Projekt'
+        verbose_name_plural = 'Projekte'
+
+    def __str__(self):
+        return self.title
+
+
+class GalleryProjectMedia(models.Model):
+    project = models.ForeignKey(GalleryProject, on_delete=models.CASCADE)
+    media = models.ForeignKey(MediaAsset, verbose_name='Medium', on_delete=models.CASCADE)
+    sort_order = models.PositiveIntegerField('Reihenfolge', default=0)
+    poster = models.ForeignKey(MediaAsset, verbose_name='Videovorschaubild', null=True, blank=True, on_delete=models.SET_NULL, related_name='+', limit_choices_to={'media_type': 'image'})
+
+    class Meta:
+        ordering = ('sort_order', 'pk')
+        constraints = [models.UniqueConstraint(fields=('project', 'media'), name='unique_gallery_project_media')]
+        verbose_name = 'Projektmedium'
+        verbose_name_plural = 'Projektmedien'
